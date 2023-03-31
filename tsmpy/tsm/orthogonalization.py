@@ -1,19 +1,25 @@
 import pulp
 from collections import defaultdict
+
+from tsmpy.tsm.planarization import Planarization
 from .flownet import Flow_net
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class Orthogonalization:
     '''works on a planar embedding, changes shape of the graph.
     '''
 
-    def __init__(self, planar, uselp=False):
+    def __init__(self, planar: Planarization, uselp=False):
         self.planar = planar
-
         self.flow_network = self.face_determination()
+
         if not uselp:
             self.flow_dict = self.tamassia_orthogonalization()
         else:
             self.flow_dict = self.lp_solve()
+        
+
 
     def face_determination(self):
         flow_network = Flow_net()
@@ -22,15 +28,17 @@ class Orthogonalization:
             flow_network.add_v(vertex.id)
 
         for face in self.planar.dcel.faces.values():
-            flow_network.add_f(face.id, len(
-                face), face.is_external)
-
+            flow_network.add_f(face.id, len(face), face.is_external)
+            
         for vertex in self.planar.dcel.vertices.values():
             for he in vertex.surround_half_edges():
-                flow_network.add_v2f(vertex.id, he.inc.id, he.id)
+                face = self.planar.dcel.faces[he.inc.id]
+                flow_network.add_v2f(vertex.id, he.inc.id, he.id, face.surrounded_by_help_nodes)
 
         for he in self.planar.dcel.half_edges.values():
-            flow_network.add_f2f(he.twin.inc.id, he.inc.id, he.id)  # lf -> rf
+            f1 = self.planar.dcel.faces[he.twin.inc.id]
+            f2 = self.planar.dcel.faces[he.inc.id]
+            flow_network.add_f2f(he.twin.inc.id, he.inc.id, he.id, f1.surrounded_by_help_nodes, f2.surrounded_by_help_nodes)  # lf -> rf
 
         return flow_network
 

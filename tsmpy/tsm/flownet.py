@@ -4,12 +4,23 @@ import networkx as nx
 from collections import defaultdict
 
 class Flow_net(nx.MultiDiGraph):
-    def add_v2f(self, v, f, key):
-        self.add_edge(v, f, key=key, lowerbound=1, capacity=4, weight=0)
 
-    def add_f2f(self, f1, f2, key):
-        # if not self.has_edge(f1, f2):
-        self.add_edge(f1, f2, key=key, lowerbound=0, capacity=2**32, weight=1)
+    def add_v2f(self, v, f, key, surrounded_by_help_nodes):
+        if surrounded_by_help_nodes:
+            self.add_edge(v, f, key=key, lowerbound=2, capacity=2, weight=0)
+        else:
+            self.add_edge(v, f, key=key, lowerbound=1, capacity=4, weight=0)
+
+    def add_f2f(self, f1, f2, key, f1_surrounded_by_help_nodes, f2_surrounded_by_help_nodes):
+        assert not (f1_surrounded_by_help_nodes and f2_surrounded_by_help_nodes)
+
+        if f1_surrounded_by_help_nodes:
+            self.add_edge(f1, f2, key=key, lowerbound=0, capacity=1, weight=1)
+        else:
+            # if not self.has_edge(f1, f2):
+            self.add_edge(f1, f2, key=key, lowerbound=0, capacity=2**32, weight=1)
+        if f2_surrounded_by_help_nodes:
+            self.add_edge(f1, f2, key=key, lowerbound=0, capacity=0, weight=1)
 
     def add_v(self, v):
         self.add_node(v, demand=-4)  # the total degree around a node is 2pi

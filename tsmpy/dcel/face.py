@@ -3,6 +3,7 @@ class Face:
         self.id = name
         self.inc = None  # the first half-edge incident to the face from left
         self.is_external = False
+        self.surrounded_by_help_nodes = False
 
     def __len__(self):
         return len(list(self.surround_vertices()))

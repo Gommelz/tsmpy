@@ -1,4 +1,6 @@
 from copy import deepcopy
+
+from tsmpy.tsm import planarization
 from .flownet import Flow_net
 from tsmpy.dcel import Dcel
 import networkx as nx
@@ -46,12 +48,14 @@ class Compaction:
             # use ('bend', idx) to represent bend node
             flow_dict[u][rf_id][u,
                                 ('bend', idx)] = flow_dict[u][rf_id].pop((u, v))
-
+            bend_edges = []
             for i in range(num_bends):
                 cur_node = ('bend', idx)
                 pre_node = ('bend', idx - 1) if i > 0 else u
                 nxt_node = ('bend', idx + 1) if i < num_bends - 1 else v
                 self.G.add_edge(pre_node, cur_node)
+                planarization.bend_to_normal_edges[(pre_node, cur_node)] = (u, v)
+                bend_edges.append((pre_node, cur_node))
                 self.dcel.add_node_between(
                     pre_node, cur_node, v
                 )
@@ -64,6 +68,10 @@ class Compaction:
             flow_dict[v][lf_id][v,
                                 ('bend', idx - 1)] = flow_dict[v][lf_id].pop((v, u))
             self.G.add_edge(('bend', idx - 1), v)
+            bend_edges.append((('bend', idx - 1), v))
+            
+            planarization.bend_to_normal_edges[(('bend', idx - 1), v)] = (u, v)
+            planarization.replaced_to_bend_edges[(u, v)] = bend_edges
 
     def refine_faces(self, halfedge_side):
         """Make face rectangle, create dummpy nodes.
